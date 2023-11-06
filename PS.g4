@@ -185,6 +185,9 @@ UNEQUAL: '!=' | '!==' | '\\ne' | '\\neq' | '\\not\\equiv';
 
 BANG: '!';
 
+AND: '\\land' | '\\wedge';
+OR: '\\lor' | '\\vee';
+
 fragment PERCENT_SIGN: '\\%';
 PERCENT_NUMBER: NUMBER PERCENT_SIGN;
 
@@ -389,7 +392,9 @@ relation_list:
 
 relation_list_content:
     relation COMMA relation (COMMA relation)*
-    | relation SEMICOLON relation (SEMICOLON relation)*;
+    | relation SEMICOLON relation (SEMICOLON relation)*
+    | relation AND relation (AND relation)*
+    | relation OR relation (OR relation)*;
 
 equality:
     expr (EQUAL | ASSIGNMENT) expr;
