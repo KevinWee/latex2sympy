@@ -1,6 +1,5 @@
 import sympy
 import re
-from sympy import matrix_symbols, simplify, factor, expand, apart, expand_trig
 from antlr4 import InputStream, CommonTokenStream
 from antlr4.error.ErrorListener import ErrorListener
 
@@ -43,31 +42,31 @@ def set_variances(vars):
         var[str(variance)] = vars[variance]
 
 
-def latex2sympy(sympy: str, variable_values={}):
+def latex2sympy(latex: str, variable_values={}):
     # record frac
     global frac_type
-    if sympy.find(r'\frac') != -1:
+    if latex.find(r'\frac') != -1:
         frac_type = r'\frac'
-    if sympy.find(r'\dfrac') != -1:
+    if latex.find(r'\dfrac') != -1:
         frac_type = r'\dfrac'
-    if sympy.find(r'\tfrac') != -1:
+    if latex.find(r'\tfrac') != -1:
         frac_type = r'\tfrac'
-    sympy = sympy.replace(r'\dfrac', r'\frac')
-    sympy = sympy.replace(r'\tfrac', r'\frac')
+    latex = latex.replace(r'\dfrac', r'\frac')
+    latex = latex.replace(r'\tfrac', r'\frac')
     # Translate Transpose
-    sympy = sympy.replace(r'\mathrm{T}', 'T', -1)
+    latex = latex.replace(r'\mathrm{T}', 'T', -1)
     # Translate Derivative
-    sympy = sympy.replace(r'\mathrm{d}', 'd', -1).replace(r'{\rm d}', 'd', -1)
+    latex = latex.replace(r'\mathrm{d}', 'd', -1).replace(r'{\rm d}', 'd', -1)
     # Translate Matrix
-    sympy = sympy.replace(r'\left[\begin{matrix}', r'\begin{bmatrix}', -1).replace(r'\end{matrix}\right]', r'\end{bmatrix}', -1)
+    latex = latex.replace(r'\left[\begin{matrix}', r'\begin{bmatrix}', -1).replace(r'\end{matrix}\right]', r'\end{bmatrix}', -1)
     # Translate Permutation
-    sympy = re.sub(r"\(([a-zA-Z0-9+\-*/\\ ]+?)\)_{([a-zA-Z0-9+\-*/\\ ]+?)}", r"\\frac{(\1)!}{((\1)-(\2))!}", sympy)
+    latex = re.sub(r"\(([a-zA-Z0-9+\-*/\\ ]+?)\)_{([a-zA-Z0-9+\-*/\\ ]+?)}", r"\\frac{(\1)!}{((\1)-(\2))!}", latex)
     # Remove \displaystyle
-    sympy = sympy.replace(r'\displaystyle', ' ', -1)
+    latex = latex.replace(r'\displaystyle', ' ', -1)
     # Remove \quad
-    sympy = sympy.replace(r'\quad', ' ', -1).replace(r'\qquad', ' ', -1).replace(r'~', ' ', -1).replace(r'\,', ' ', -1)
+    latex = latex.replace(r'\quad', ' ', -1).replace(r'\qquad', ' ', -1).replace(r'~', ' ', -1).replace(r'\,', ' ', -1)
     # Remove $
-    sympy = sympy.replace(r'$', ' ', -1)
+    latex = latex.replace(r'$', ' ', -1)
 
     # variable values
     global VARIABLE_VALUES
@@ -77,10 +76,10 @@ def latex2sympy(sympy: str, variable_values={}):
         VARIABLE_VALUES = {}
 
     # setup listener
-    matherror = MathErrorListener(sympy)
+    matherror = MathErrorListener(latex)
 
     # stream input
-    stream = InputStream(sympy)
+    stream = InputStream(latex)
     lex = PSLexer(stream)
     lex.removeErrorListeners()
     lex.addErrorListener(matherror)
@@ -98,14 +97,18 @@ def latex2sympy(sympy: str, variable_values={}):
 
     # if a list
     if math.relation_list():
-        return_data = []
-
         # go over list items
         relation_list = math.relation_list().relation_list_content()
+        conditions = []
         for list_item in relation_list.relation():
             expr = convert_relation(list_item)
-            return_data.append(expr)
-
+            conditions.append(expr)
+        if relation_list.AND():
+            return_data = sympy.And(*conditions)
+        elif relation_list.OR():
+            return_data = sympy.Or(*conditions)
+        else:
+            return_data = conditions
     # if not, do default
     else:
         relation = math.relation()
@@ -1129,7 +1132,7 @@ def latex2latex(tex):
     if isinstance(result, list) or isinstance(result, tuple) or isinstance(result, dict):
         return latex(result)
     else:
-        return latex(simplify(result.subs(variances).doit().doit()))
+        return latex(sympy.simplify(result.subs(variances).doit().doit()))
 
 
 # Set image value
