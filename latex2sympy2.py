@@ -1,5 +1,6 @@
 import sympy
 import re
+from decimal import Decimal
 from antlr4 import InputStream, CommonTokenStream
 from antlr4.error.ErrorListener import ErrorListener
 
@@ -200,8 +201,8 @@ def convert_expr(expr):
 
 
 def convert_interval(interval):
-    start = int(interval.NUMBER(0).getText())
-    end = int(interval.NUMBER(1).getText())
+    start = Decimal(interval.NUMBER(0).getText())
+    end = Decimal(interval.NUMBER(1).getText())
     if interval.L_PAREN() and interval.R_PAREN():
         return sympy.Interval.open(start, end)
     elif interval.L_BRACKET() and interval.R_BRACKET():
