@@ -175,6 +175,7 @@ NUMBER:
 E_NOTATION: NUMBER E_NOTATION_E (SUB | ADD)? DIGIT+;
 
 IN: '\\in';
+NOTIN: '\\notin';
 ASSIGNMENT: '=';
 EQUAL: '==' | '\\equiv';
 LT: '<';
@@ -376,8 +377,12 @@ det:
 matrix_row:
     expr (MATRIX_DEL_COL expr)*;
 
+interval:
+    (L_PAREN | L_BRACKET) NUMBER COMMA NUMBER (R_PAREN | R_BRACKET);
+
 relation:
-    relation (IN | ASSIGNMENT | EQUAL | LT | LTE | GT | GTE | UNEQUAL) relation
+    relation (ASSIGNMENT | EQUAL | LT | LTE | GT | GTE | UNEQUAL) relation
+    | expr (IN | NOTIN) interval
     | expr;
 
 relation_list:

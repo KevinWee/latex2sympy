@@ -112,6 +112,15 @@ class PSListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by PSParser#interval.
+    def enterInterval(self, ctx):
+        pass
+
+    # Exit a parse tree produced by PSParser#interval.
+    def exitInterval(self, ctx):
+        pass
+
+
     # Enter a parse tree produced by PSParser#relation.
     def enterRelation(self, ctx):
         pass

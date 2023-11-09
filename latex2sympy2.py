@@ -145,9 +145,18 @@ class MathErrorListener(ErrorListener):
 
 
 def convert_relation(rel):
-    if rel.expr():
+    if rel.expr() and rel.interval():
+        if rel.IN() or rel.NOTIN():
+            lh = convert_expr(rel.expr())
+            rh = convert_interval(rel.interval())
+            contains = rh.contains(lh)
+            if rel.NOTIN():
+                return ~contains
+            return contains
+        raise Exception("Illegal Relation Operator")
+    elif rel.expr():
         return convert_expr(rel.expr())
-
+    
     lh = convert_relation(rel.relation(0))
     rh = convert_relation(rel.relation(1))
     if rel.LT():
@@ -160,6 +169,8 @@ def convert_relation(rel):
         return sympy.GreaterThan(lh, rh, evaluate=False)
     elif rel.EQUAL():
         return sympy.Eq(lh, rh, evaluate=False)
+    elif rel.UNEQUAL():
+        return sympy.Ne(lh, rh, evaluate=False)
     elif rel.ASSIGNMENT():
         # !Use Global variances
         if lh.is_Symbol:
@@ -181,28 +192,26 @@ def convert_relation(rel):
                 return result
             else:
                 return sympy.Eq(lh, rh, evaluate=False)
-    elif rel.IN():
-        # !Use Global variances
-        if hasattr(rh, 'is_Pow') and rh.is_Pow and hasattr(rh.exp, 'is_Mul'):
-            n = rh.exp.args[0]
-            m = rh.exp.args[1]
-            if n in variances:
-                n = variances[n]
-            if m in variances:
-                m = variances[m]
-            rh = sympy.MatrixSymbol(lh, n, m)
-            variances[lh] = rh
-            var[str(lh)] = rh
-        else:
-            raise Exception("Don't support this form of definition of matrix symbol.")
-        return lh
-    elif rel.UNEQUAL():
-        return sympy.Ne(lh, rh, evaluate=False)
 
 
 def convert_expr(expr):
     if expr.additive():
         return convert_add(expr.additive())
+
+
+def convert_interval(interval):
+    start = int(interval.NUMBER(0).getText())
+    end = int(interval.NUMBER(1).getText())
+    if interval.L_PAREN() and interval.R_PAREN():
+        return sympy.Interval.open(start, end)
+    elif interval.L_BRACKET() and interval.R_BRACKET():
+        return sympy.Interval(start, end)
+    elif interval.L_PAREN() and interval.R_BRACKET():
+        return sympy.Interval.Lopen(start, end)
+    elif interval.L_BRACKET() and interval.R_PAREN():
+        return sympy.Interval.Ropen(start, end)
+    else:
+        raise Exception("Illegal Interval Definition")
 
 
 def convert_elementary_transform(matrix, transform):
@@ -1152,7 +1161,8 @@ if __name__ == '__main__':
     # latex2latex(r'b_1=\begin{bmatrix}1 \\ 2 \\ 3 \\ 4\end{bmatrix}')
     # tex = r"(x+2)|_{x=y+1}"
     # tex = r"\operatorname{zeros}(3)"
-    tex = r"\operatorname{rows}(\begin{bmatrix}1 & 2 \\ 3 & 4\end{bmatrix})"
+    # tex = r"\operatorname{rows}(\begin{bmatrix}1 & 2 \\ 3 & 4\end{bmatrix})"
+    tex = r"x|_{x=9} \in (1,9]"
     # print("latex2latex:", latex2latex(tex))
     math = latex2sympy(tex)
     # math = math.subs(variances)
@@ -1162,4 +1172,4 @@ if __name__ == '__main__':
     # print("math:", latex(math.doit()))
     # print("math_type:", type(math.doit()))
     # print("shape:", (math.doit()).shape)
-    print("cal:", latex2latex(tex))
+    # print("cal:", latex2latex(tex))
